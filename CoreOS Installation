@@ -137,7 +137,7 @@ Save the file and then execute the install script specifying the new cloud-confi
 * -C – Specifies the channel we want to grab CoreOS from, stable, or beta
 * -c – Specifies the location of the config file (cloud-config.yaml) that we want to use.
 
-coreos-install -d /dev/sda -C stable -c cloud-config.yaml
+coreos-install -d /dev/sda -C stable -c cloud-config.yml
 
 
 --------------------------
