@@ -16,48 +16,16 @@ with below Template
 -------------------------------------
 #cloud-config
 
-coreos:  
-  etcd:
-# Set Hostname
-hostname: CoreOS01
-
-# Set User Name and Password (SSH Key)
-users:  
-  - name: core
-    ssh-authorized-keys: 
-      - ssh-rsa your_private_key_here
-
-groups:
-      - sudo
-      - docker
-
-# Set SSH Keys
-
-coreos:  
-  etcd:    
-    addr: $private_ipv4:4001
-    peer-addr: $private_ipv4:7001
-  units:
-    - name: etcd.service
-      command: start
-    - name: fleet.service
-      command: start
-    - name: static.network
-      content: |
-        [Match]
-        Name=ens3
-
-        [Network]
-        Address=192.168.1.21/24
-        Gateway=255.255.255.0
-        DNS=192.168.1.1
-        DNS=8.8.8.8
-
 coreos:
   etcd:
+    name: "node001"
     # generate a new token for each unique cluster from https://discovery.etcd.io/new
     discovery: "https://discovery.etcd.io/<token>"
-  
+    # multi-region and multi-cloud deployments need to use $public_ipv4
+    addr: "$public_ipv4:4001"
+    peer-addr: "$private_ipv4:7001"
+
+coreos:
   etcd2:
     # generate a new token for each unique cluster from https://discovery.etcd.io/new?size=3
     discovery: "https://discovery.etcd.io/<token>"
@@ -68,6 +36,99 @@ coreos:
     # legacy ports can be omitted if your application doesn't depend on them
     listen-client-urls: "http://0.0.0.0:2379,http://0.0.0.0:4001"
     listen-peer-urls: "http://$private_ipv4:2380,http://$private_ipv4:7001"
+    
+coreos:
+  fleet:
+      public-ip: "$public_ipv4"
+      metadata: "region=us-west"
+      
+coreos:
+  flannel:
+      etcd_prefix: "/coreos.com/network2"
+      
+coreos:
+  update:
+    reboot-strategy: "etcd-lock"
+    
+
+coreos:
+  units:
+    - name: "docker-redis.service"
+      command: "start"
+      content: |
+        [Unit]
+        Description=Redis container
+        Author=Me
+        After=docker.service
+
+        [Service]
+        Restart=always
+        ExecStart=/usr/bin/docker start -a redis_server
+        ExecStop=/usr/bin/docker stop -t 2 redis_server
+    
+coreos:
+  units:
+    - name: "docker.service"
+      drop-ins:
+        - name: "50-insecure-registry.conf"
+          content: |
+            [Service]
+            Environment=DOCKER_OPTS='--insecure-registry="10.0.1.0/24"
+            
+coreos:
+  units:
+    - name: "etcd2.service"
+      command: "start"
+    - name: "fleet.service"
+      command: "start"
+      
+ssh_authorized_keys:
+  - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0g+ZTxC7weoIJLUafOgrm+h..."
+
+hostname: "coreos1"
+
+users:
+  - name: "elroy"
+    passwd: "$6$5s2u6/jR$un0AvWnqilcgaNB3Mkxd5yYv6mTlWfOoCYHZmfi3LDKVltj.E8XNKEcwWm..."
+    groups:
+      - "sudo"
+      - "docker"
+    ssh-authorized-keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0g+ZTxC7weoIJLUafOgrm+h..."
+
+
+
+write_files:
+  - path: "/etc/resolv.conf"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      nameserver 8.8.8.8
+  - path: "/etc/motd"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      Good news, everyone!
+  - path: "/tmp/like_this"
+    permissions: "0644"
+    owner: "root"
+    encoding: "gzip"
+    content: !!binary |
+      H4sIAKgdh1QAAwtITM5WyK1USMqvUCjPLMlQSMssS1VIya9KzVPIySwszS9SyCpNLwYARQFQ5CcAAAA=
+  - path: "/tmp/or_like_this"
+    permissions: "0644"
+    owner: "root"
+    encoding: "gzip+base64"
+    content: |
+      H4sIAKgdh1QAAwtITM5WyK1USMqvUCjPLMlQSMssS1VIya9KzVPIySwszS9SyCpNLwYARQFQ5CcAAAA=
+  - path: "/tmp/todolist"
+    permissions: "0644"
+    owner: "root"
+    encoding: "base64"
+    content: |
+      UGFjayBteSBib3ggd2l0aCBmaXZlIGRvemVuIGxpcXVvciBqdWdz
+      
+manage_etc_hosts: "localhost"
   
 ------------------------------------------
 
@@ -77,6 +138,35 @@ Save the file and then execute the install script specifying the new cloud-confi
 * -c – Specifies the location of the config file (cloud-config.yaml) that we want to use.
 
 coreos-install -d /dev/sda -C stable -c cloud-config.yaml
+
+
+--------------------------
+Generating a password hash
+
+If you choose to use a password instead of an SSH key, generating a safe hash is extremely important to the security of your system. Simplified hashes like md5crypt are trivial to crack on modern GPU hardware. Here are a few ways to generate secure hashes:
+
+# On Debian/Ubuntu (via the package "whois")
+mkpasswd --method=SHA-512 --rounds=4096
+
+# OpenSSL (note: this will only make md5crypt.  While better than plantext it should not be considered fully secure)
+openssl passwd -1
+
+# Python (change password and salt values)
+python -c "import crypt, getpass, pwd; print crypt.crypt('password', '\$6\$SALT\$')"
+
+# Perl (change password and salt values)
+perl -e 'print crypt("password","\$6\$SALT\$") . "\n"'
+
+users:
+  - name: "elroy"
+    passwd: "$6$5s2u6/jR$un0AvWnqilcgaNB3Mkxd5yYv6mTlWfOoCYHZmfi3LDKVltj.E8XNKEcwWm..."
+    groups:
+      - "sudo"
+      - "docker"
+    ssh-authorized-keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0g+ZTxC7weoIJLUafOgrm+h..."
+
+
 
 
 
