@@ -16,6 +16,8 @@ with below Template
 -------------------------------------
 #cloud-config
 
+coreos:  
+  etcd:
 # Set Hostname
 hostname: CoreOS01
 
@@ -25,7 +27,7 @@ users:
     ssh-authorized-keys: 
       - ssh-rsa your_private_key_here
 
-  - groups:
+groups:
       - sudo
       - docker
 
@@ -74,7 +76,7 @@ Save the file and then execute the install script specifying the new cloud-confi
 * -C – Specifies the channel we want to grab CoreOS from, stable, or beta
 * -c – Specifies the location of the config file (cloud-config.yaml) that we want to use.
 
-Coreos-Install -d /dev/sda -C stable -c cloud-config.yaml
+coreos-install -d /dev/sda -C stable -c cloud-config.yaml
 
 
 
