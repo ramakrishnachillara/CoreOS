@@ -17,16 +17,56 @@ with below Template
 #cloud-config
 
 # Set Hostname
-hostname: CoreOSBM1
+hostname: CoreOS01
+
+# Set User Name and Password (SSH Key)
+users:  
+  - name: core
+    ssh-authorized-keys: 
+      - ssh-rsa your_private_key_here
+
+  - groups:
+      - sudo
+      - docker
 
 # Set SSH Keys
-ssh_authorized_keys:
-- ssh-rsa ABCDB3abcdefghijklmnopqrstuvwxyz7890/zabcdefghijklmnopqrstuvwxyzwQPMa5N3Gc0Gum6J17tYbmOemXkgWcrSC+qmeoptjZACabcdefghijklmnopqrstuvwxyzI3J/Mi/swtn1abcdefghijklmnopqrstuvwxyzdefghijklmnopqrstuvwxyzXQjIGW33kHMrXLYLabcdefghijklmnopqrstuvwxyzq0Bvq0tyyVKlabcdefghijklmnopqrstuvwxyzb5X2IjdFIkl8tKl9u8FyoFv+1234567890QKI5QbabcdefghijklmnopqrstuvwxyzHpr0PeIu2GgWUu/2Te0YWRabcdefghijklmnopqrstuvwxyzc/TODInyz5w64dDYDZ1234567890 core@dockcore.com
+
+coreos:  
+  etcd:    
+    addr: $private_ipv4:4001
+    peer-addr: $private_ipv4:7001
+  units:
+    - name: etcd.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: static.network
+      content: |
+        [Match]
+        Name=ens3
+
+        [Network]
+        Address=192.168.1.21/24
+        Gateway=255.255.255.0
+        DNS=192.168.1.1
+        DNS=8.8.8.8
 
 coreos:
   etcd:
     # generate a new token for each unique cluster from https://discovery.etcd.io/new
-    discovery: https://discovery.etcd.io/12345678901234567890123456789012
+    discovery: "https://discovery.etcd.io/<token>"
+  
+  etcd2:
+    # generate a new token for each unique cluster from https://discovery.etcd.io/new?size=3
+    discovery: "https://discovery.etcd.io/<token>"
+    # multi-region and multi-cloud deployments need to use $public_ipv4
+    advertise-client-urls: "http://$public_ipv4:2379"
+    initial-advertise-peer-urls: "http://$private_ipv4:2380"
+    # listen on both the official ports and the legacy ports
+    # legacy ports can be omitted if your application doesn't depend on them
+    listen-client-urls: "http://0.0.0.0:2379,http://0.0.0.0:4001"
+    listen-peer-urls: "http://$private_ipv4:2380,http://$private_ipv4:7001"
+  
 ------------------------------------------
 
 Save the file and then execute the install script specifying the new cloud-config.yaml file and the hard drive you want to install coreos on.
