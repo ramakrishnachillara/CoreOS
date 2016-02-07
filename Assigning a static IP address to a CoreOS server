@@ -1,0 +1,21 @@
+
+1. SSH to your CoreOS server using the DHCP given IP address that is displayed on the CoreOS console.
+
+2. Once in the Core os server, Navigate to the /etc/systed/network directory.
+
+3. Type in the ifconfig command to get the adapter name
+
+3. Create a new file called static.network and give it the values that desired.
+
+cd /etc/systemd/network
+sudo vim static.network
+[Match]
+Name=enp2s4
+
+[Network]
+Address=192.168.1.200/24
+Gateway=192.168.1.1
+DNS=8.8.8.8
+DNS=8.8.4.4
+4. Save the file and reboot the server. When the server comes back up, 
+it should have the IP address that you defined in your static.network file.
