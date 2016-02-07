@@ -1,0 +1,44 @@
+1. SSH to your CoreOS server using the DHCP given IP address that is displayed on the CoreOS console.
+
+2. Once in the Core os server, Navigate to the /mnt/ directory and create a folder that you will use to mount the storage
+
+cd /mnt/
+sudo mkdir container_storage
+3. Change directories into the /etc/systemd/system directory.
+
+cd /etc/systemd/system/
+4. Create a new file called mnt-container_storage.
+* the mnt-name MUST match the name of the folder created in /mnt/
+
+cd /etc/systemd/system
+sudo vim mnt-container_storage
+* The following example assumes that the disk that you want mounted to /mnt/container_storage is:
+** /dev/sdb1
+** File System is EXT4
+** Substitute these values with the actual properties of your disk.
+
+[Unit]
+Description = Mount for Container Storage
+
+[Mount]
+What=/dev/sdb1
+Where=/mnt/container_storage
+Type=ext4
+
+[Install]
+WantedBy = multi-user.target
+5. Save the file and enable and start the unit file
+
+sudo systemctl enable mnt-container_storage.mount
+sudo systemctl start mnt-container_storage.mount
+6. Verify that the storage is mounted
+
+df -h
+
+Filesystem     Size     Used     Avail     Use%     Mounted on
+rootfs         28G      28M      28G       1%       /
+tmpfs          993M      0       993M      0%       /dev
+etc...
+/dev/sdb1      30G       44M     28G        1%      /mnt/container_storage
+
+5. Reboot the server. When the server comes back up, it should have the storage mounted.
