@@ -1,0 +1,41 @@
+Core OS LiveCD
+Boot With Coreos Live CD or USB Drive.
+it is login to system automatically .
+to Login to root account.
+sudo su - root
+
+* SSH private and public key generated on the machine used to connect to the CoreOS server.
+Procedure :
+ssh-keygen -t rsa -b 2048
+Follow the screens and genarate SSH Keys
+cat /home/user/.ssh/id_rsa.pub
+and copy the ssh pub key
+
+create another file named cloud-config.yaml
+with below Template
+-------------------------------------
+#cloud-config
+
+# Set Hostname
+hostname: CoreOSBM1
+
+# Set SSH Keys
+ssh_authorized_keys:
+- ssh-rsa ABCDB3abcdefghijklmnopqrstuvwxyz7890/zabcdefghijklmnopqrstuvwxyzwQPMa5N3Gc0Gum6J17tYbmOemXkgWcrSC+qmeoptjZACabcdefghijklmnopqrstuvwxyzI3J/Mi/swtn1abcdefghijklmnopqrstuvwxyzdefghijklmnopqrstuvwxyzXQjIGW33kHMrXLYLabcdefghijklmnopqrstuvwxyzq0Bvq0tyyVKlabcdefghijklmnopqrstuvwxyzb5X2IjdFIkl8tKl9u8FyoFv+1234567890QKI5QbabcdefghijklmnopqrstuvwxyzHpr0PeIu2GgWUu/2Te0YWRabcdefghijklmnopqrstuvwxyzc/TODInyz5w64dDYDZ1234567890 core@dockcore.com
+
+coreos:
+  etcd:
+    # generate a new token for each unique cluster from https://discovery.etcd.io/new
+    discovery: https://discovery.etcd.io/12345678901234567890123456789012
+------------------------------------------
+
+Save the file and then execute the install script specifying the new cloud-config.yaml file and the hard drive you want to install coreos on.
+* -d – Specifies the destination drive that CoreOS will be installed on
+* -C – Specifies the channel we want to grab CoreOS from, stable, or beta
+* -c – Specifies the location of the config file (cloud-config.yaml) that we want to use.
+
+Coreos-Install -d /dev/sda -C stable -c cloud-config.yaml
+
+
+
+
